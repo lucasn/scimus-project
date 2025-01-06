@@ -5,6 +5,7 @@ import pandas as pd
 import base64
 import PIL
 from io import BytesIO
+from mapping import LABELS_MAPPING
 
 class Visualization:
     def __init__(self, emoji_size=2):
@@ -13,7 +14,7 @@ class Visualization:
         self.emoji_size = emoji_size
 
         # Placeholder emoji while we don't have the mapping label-emoji
-        self.emoji = self._retrieve_emoji_as_PIL('U+1F609')
+        self.default_emoji = self._retrieve_emoji_as_PIL('U+274C')
 
 
     def _retrieve_emoji_as_PIL(self, unicode):
@@ -23,7 +24,7 @@ class Visualization:
         return PIL.Image.open(BytesIO(image_bytes))
 
 
-    def generate_visualization(self, x, duration, y, figure_name='output.png'):
+    def generate_visualization(self, x, duration, y, labels, figure_name='output.png'):
         """
         Generates a bar chart visualization with emoji annotations.
 
@@ -55,12 +56,19 @@ class Visualization:
             # the 1.1 is to adjust the position lower than the top of the bar
             emoji_y_pos = y[i] - 1.1*emoji_height 
 
+            emoji_unicode = LABELS_MAPPING.get(labels[i])
 
-            ax.imshow(self.emoji, 
-                      extent=[emoji_x_pos, emoji_x_pos + emoji_width, 
-                              emoji_y_pos, emoji_y_pos + emoji_height], 
-                      aspect='auto')
-
+            if not emoji_unicode:
+                ax.imshow(self.default_emoji, 
+                        extent=[emoji_x_pos, emoji_x_pos + emoji_width, 
+                                emoji_y_pos, emoji_y_pos + emoji_height], 
+                        aspect='auto')
+            else:
+                emoji = self._retrieve_emoji_as_PIL(emoji_unicode.split('-')[1])
+                ax.imshow(emoji, 
+                        extent=[emoji_x_pos, emoji_x_pos + emoji_width, 
+                                emoji_y_pos, emoji_y_pos + emoji_height], 
+                        aspect='auto')
 
         ax.set_xlim(*fig_xlim)  
         ax.set_ylim(*fig_ylim)  

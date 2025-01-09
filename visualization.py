@@ -74,3 +74,43 @@ class Visualization:
         ax.set_ylim(*fig_ylim)  
 
         plt.savefig(figure_name, dpi=300)
+    
+
+    def create_emoji_gif(self, labels, output_path='output.gif', frame_size=(200, 200), duration=500):
+        frames = []
+
+        for label in labels:
+            emoji_image = self.default_emoji
+
+            emoji_unicode = LABELS_MAPPING.get(label)
+            if emoji_unicode:
+                unicodes = emoji_unicode.split('-')
+                for i, unicode in enumerate(unicodes[1:]):
+                    if i == 0:
+                        emoji_image = self._retrieve_emoji_as_PIL(unicode)
+                    else:
+                        next_emoji = self._retrieve_emoji_as_PIL(unicode)
+                        new_emoji_image = PIL.Image.new("RGBA", (emoji_image.width + next_emoji.width, emoji_image.height)) 
+                        new_emoji_image.paste(emoji_image, (0, 0))
+                        new_emoji_image.paste(next_emoji, (emoji_image.width, 0))
+                        emoji_image = new_emoji_image
+
+            frame = PIL.Image.new("RGBA", frame_size, (255, 255, 255, 1))
+
+            emoji_image = emoji_image.copy().convert("RGBA")
+            emoji_image.thumbnail((frame_size[0] // 2, frame_size[1] // 2), PIL.Image.ANTIALIAS)
+
+            x = (frame_size[0] - emoji_image.width) // 2
+            y = (frame_size[1] - emoji_image.height) // 2
+
+            frame.paste(emoji_image, (x, y), emoji_image)
+
+            frames.append(frame)
+
+        frames[0].save(
+            output_path,
+            save_all=True,
+            append_images=frames[1:],
+            duration=duration,
+            loop=0,
+        )

@@ -4,8 +4,10 @@ import numpy as np
 import pandas as pd
 import base64
 import PIL
+from PIL import ImageDraw
 from io import BytesIO
 from mapping import LABELS_MAPPING
+import math
 
 class Visualization:
     def __init__(self, emoji_size=2):
@@ -76,7 +78,7 @@ class Visualization:
         plt.savefig(figure_name, dpi=300)
     
 
-    def create_emoji_gif(self, labels, output_path='output.gif', frame_size=(200, 200), duration=500):
+    def create_emoji_gif(self, labels, output_name='output', frame_size=(200, 200), duration=500):
         frames = []
 
         for label in labels:
@@ -108,7 +110,117 @@ class Visualization:
             frames.append(frame)
 
         frames[0].save(
-            output_path,
+            f'output/{output_name}.gif',
+            save_all=True,
+            append_images=frames[1:],
+            duration=duration,
+            loop=0,
+        )
+
+    def create_emoji_circle_gif(self, labels, output_name='output', frame_size=(200, 200), duration=500, circle_radius=70):
+        frames = []
+
+        # Convert labels to emoji images
+        emoji_images = []
+        for label in labels:
+            emoji_unicode = LABELS_MAPPING.get(label)
+            if emoji_unicode:
+                unicodes = emoji_unicode.split('-')
+                for i, unicode in enumerate(unicodes[1:]):
+                    if i == 0:
+                        emoji_image = self._retrieve_emoji_as_PIL(unicode)
+                    else:
+                        next_emoji = self._retrieve_emoji_as_PIL(unicode)
+                        new_emoji_image = PIL.Image.new("RGBA", (emoji_image.width + next_emoji.width, emoji_image.height)) 
+                        new_emoji_image.paste(emoji_image, (0, 0))
+                        new_emoji_image.paste(next_emoji, (emoji_image.width, 0))
+                        emoji_image = new_emoji_image
+
+                emoji_images.append(emoji_image)
+
+        # Determine the number of frames (one for each emoji in the circle)
+        num_frames = len(emoji_images)
+
+        frame = PIL.Image.new("RGBA", frame_size, (255, 255, 255, 1))
+
+        # Calculate positions for emojis in a circle
+        center_x, center_y = frame_size[0] // 2, frame_size[1] // 2
+        angle_step = 2 * math.pi / num_frames
+
+        for i, emoji_image in enumerate(emoji_images):
+            frame = frame.copy()
+            angle = angle_step * ((i - math.pi / 2))
+
+            emoji_resized = emoji_image.copy().convert("RGBA")
+            emoji_resized.thumbnail((frame_size[0] // 6, frame_size[1] // 6), PIL.Image.ANTIALIAS)
+
+            x = center_x + int(circle_radius * math.cos(angle) - emoji_resized.width // 4)
+            y = center_y + int(circle_radius * math.sin(angle) - emoji_resized.height // 4)
+
+
+            # Paste the emoji onto the frame
+            frame.paste(emoji_resized, (x - int(0.05*frame_size[0]), y - int(0.05*frame_size[1])), emoji_resized)
+            frames.append(frame)
+
+        # Save the frames as a GIF
+        frames[0].save(
+            f'output/{output_name}_circle.gif',
+            save_all=True,
+            append_images=frames[1:],
+            duration=duration,
+            loop=0,
+        )
+
+    def create_diagonal_emoji_gif(self, labels, output_name='output', frame_size=(300, 300), duration=1000):
+        frames = []
+
+        # Convert labels to emoji images
+        emoji_images = []
+        for label in labels:
+            _emoji_images = []
+            for inside_label in label:
+                emoji_unicode = LABELS_MAPPING.get(inside_label)
+                if emoji_unicode:
+                    unicodes = emoji_unicode.split('-')
+                    for i, unicode in enumerate(unicodes[1:]):
+                        if i == 0:
+                            emoji_image = self._retrieve_emoji_as_PIL(unicode)
+                        else:
+                            next_emoji = self._retrieve_emoji_as_PIL(unicode)
+                            new_emoji_image = PIL.Image.new("RGBA", (emoji_image.width + next_emoji.width, emoji_image.height)) 
+                            new_emoji_image.paste(emoji_image, (0, 0))
+                            new_emoji_image.paste(next_emoji, (emoji_image.width, 0))
+                            emoji_image = new_emoji_image
+                _emoji_images.append(emoji_image)
+            
+            emoji_images.append(_emoji_images)
+
+        # Determine the number of frames (one set of 3 emojis per frame)
+        num_frames = len(emoji_images)
+
+        for frame_idx in range(num_frames):
+            # Create a blank frame
+            frame = PIL.Image.new("RGBA", frame_size, (255, 255, 255, 1))
+
+            for emoji_idx, emoji in enumerate(emoji_images[frame_idx]):
+                scale_factor = 1 - (emoji_idx * 0.3)
+                emoji_resized = emoji.copy().convert("RGBA")
+                new_size = (frame_size[0] // 5) * scale_factor
+                emoji_resized.thumbnail((new_size, new_size), PIL.Image.ANTIALIAS)
+
+                center_x = (emoji_idx + 1)  * (frame_size[0] // 4)
+                center_y =  (emoji_idx + 1) * (frame_size[1] // 4)
+
+                x = center_x - emoji_resized.width
+                y = center_y - emoji_resized.height
+
+                frame.paste(emoji_resized, (x, y), emoji_resized)
+
+            frames.append(frame)
+
+        # Save the frames as a GIF
+        frames[0].save(
+            f'output/{output_name}_diagonal.gif',
             save_all=True,
             append_images=frames[1:],
             duration=duration,

@@ -3,3 +3,4 @@ emojiimage-dataset/
 __pycache__
 *.png
 *.gif
+new_audios/

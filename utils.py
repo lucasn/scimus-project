@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import librosa as lb
+from mapping import BLACKLIST
+
 
 def read_audio(path_audio, path_metadata, desired_sample_rate=None):
     """
@@ -19,8 +21,8 @@ def read_audio(path_audio, path_metadata, desired_sample_rate=None):
     metadata = pd.read_csv(path_metadata, sep=',')
 
     # Converting to datetime format
-    metadata['summary_start'] = pd.to_datetime(metadata['summary_start'], infer_datetime_format=True)
-    metadata['summary_end'] = pd.to_datetime(metadata['summary_end'], infer_datetime_format=True)
+    metadata['summary_start'] = pd.to_datetime(metadata['summary_start'], infer_datetime_format=True).astype('datetime64[s]')
+    metadata['summary_end'] = pd.to_datetime(metadata['summary_end'], infer_datetime_format=True).astype('datetime64[s]')
 
     audio_chunks = []
     audio_times = []
@@ -36,3 +38,33 @@ def read_audio(path_audio, path_metadata, desired_sample_rate=None):
         audio_times.append((offset, duration))
 
     return audio_chunks, audio_times
+
+def extract_best_scores(inferences):
+    higher_scores = [higher_score[1] for higher_score, *_ in inferences]
+
+    higher_labels = []
+    for scores in inferences:
+        i = 0
+        while scores[i][0] in BLACKLIST:
+            i += 1
+        higher_labels.append(scores[i][0])
+
+    return higher_scores, higher_labels
+
+def extract_3best_labels(inferences):
+    best_labels = []
+    for i in range(len(inferences)):
+        _best_labels = []
+        count = 0
+        j = 0
+        while count < 3:
+            if inferences[i][j][0] not in BLACKLIST:
+                _best_labels.append(inferences[i][j][0])
+                count += 1
+            j += 1
+        best_labels.append(_best_labels)
+    
+    return best_labels
+            
+        
+

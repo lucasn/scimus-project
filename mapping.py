@@ -545,4 +545,5 @@ BLACKLIST = ["Animal",
              "Rail transport",
              "Railroad car, train wagon",
              "Environmental noise",
+             "Vehicle"
              ]

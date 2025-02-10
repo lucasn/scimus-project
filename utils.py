@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import librosa as lb
-from mapping import BLACKLIST
+from mapping import retrieve_blacklist
 
 
 def read_audio(path_audio, path_metadata, desired_sample_rate=None):
@@ -40,6 +40,7 @@ def read_audio(path_audio, path_metadata, desired_sample_rate=None):
     return audio_chunks, audio_times
 
 def extract_best_scores(inferences):
+    BLACKLIST = retrieve_blacklist()
     higher_scores = [higher_score[1] for higher_score, *_ in inferences]
 
     higher_labels = []
@@ -52,6 +53,7 @@ def extract_best_scores(inferences):
     return higher_scores, higher_labels
 
 def extract_3best_labels(inferences):
+    BLACKLIST = retrieve_blacklist()
     best_labels = []
     for i in range(len(inferences)):
         _best_labels = []

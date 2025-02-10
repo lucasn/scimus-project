@@ -1,3 +1,5 @@
+import csv
+
 LABELS_MAPPING = {
     "Speech": "-U+1F5E3",
     "Male speech, man speaking": "-U+1F5E3",
@@ -528,22 +530,14 @@ LABELS_MAPPING = {
     "Field recording": "-U+1F4A4"
 }
 
-BLACKLIST = ["Animal", 
-             "Domestic animals, pets", 
-             "Livestock, farm animals, working animals", 
-             "Wild animals",
-             "Bird vocalization, bird call, bird song", 
-             "Music",
-             "Musical instrument", 
-             "Plucked string instrument",
-             "Brass instrument",
-             "Bowed string instrument",
-             "Wind instrument, woodwind instrument",
-             "Motor vehicle (road)",
-             "Car passing by",
-             "Emergency vehicle",
-             "Rail transport",
-             "Railroad car, train wagon",
-             "Environmental noise",
-             "Vehicle"
-             ]
+def retrieve_blacklist(blacklist_path='./class_labels_indices_blacklisted.csv'):
+    with open(blacklist_path, 'r') as file:
+        reader = csv.reader(file)
+
+        next(reader) # skipping header
+        blacklist = []
+        for row in reader:
+            if row[3] == 'x':
+                blacklist.append(row[2])
+
+    return blacklist

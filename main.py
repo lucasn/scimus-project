@@ -3,8 +3,9 @@ from utils import read_audio
 from visualization import Visualization
 from panns_inference import AudioTagging
 from utils import extract_best_scores, extract_3best_labels
+import sys
 
-audio_name = 'A_1'
+audio_name = sys.argv[1] if len(sys.argv) > 1 else 'A_1'
 path_metadata = f'new_audios/{audio_name}.csv'
 path_audio = f'new_audios/{audio_name}.mp3'
 

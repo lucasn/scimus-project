@@ -149,7 +149,7 @@ class Visualization:
 
         for i, emoji_image in enumerate(emoji_images):
             frame = frame.copy()
-            angle = angle_step * ((i - math.pi / 2))
+            angle = angle_step * i - math.pi / 2
 
             emoji_resized = emoji_image.copy().convert("RGBA")
             emoji_resized.thumbnail((frame_size[0] // 6, frame_size[1] // 6), PIL.Image.ANTIALIAS)
@@ -161,6 +161,8 @@ class Visualization:
             # Paste the emoji onto the frame
             frame.paste(emoji_resized, (x - int(0.05*frame_size[0]), y - int(0.05*frame_size[1])), emoji_resized)
             frames.append(frame)
+
+        frames.insert(0, frames[-1])
 
         # Save the frames as a GIF
         frames[0].save(
@@ -206,7 +208,7 @@ class Visualization:
 
         for i in range(num_frames):
             frame = frame.copy()
-            angle = angle_step * ((i - math.pi / 2))
+            angle = angle_step * i - math.pi / 2
 
             emoji_resized = emoji_images[i][0].copy().convert("RGBA")
             emoji_resized.thumbnail((frame_size[0] // 6, frame_size[1] // 6), PIL.Image.ANTIALIAS)
@@ -227,6 +229,8 @@ class Visualization:
             frame.paste(emoji_resized2, (x - int(0.05*frame_size[0]), y - int(0.05*frame_size[1])), emoji_resized2)
 
             frames.append(frame)
+
+        frames.insert(0, frames[-1])
 
         # Save the frames as a GIF
         frames[0].save(
@@ -266,7 +270,7 @@ class Visualization:
 
         for frame_idx in range(num_frames):
             # Create a blank frame
-            frame = PIL.Image.new("RGBA", frame_size, (255, 255, 255, 1))
+            frame = PIL.Image.new("RGBA", frame_size, (255, 255, 255, 255))
 
             for emoji_idx, emoji in enumerate(emoji_images[frame_idx]):
                 scale_factor = 1 - (emoji_idx * 0.3)
@@ -292,3 +296,42 @@ class Visualization:
             duration=duration,
             loop=0,
         )
+
+    def create_emoji_single_image(self, labels, output_name='output', frame_size=(300, 300)):
+        emoji_images = []
+        for label in labels:
+            emoji_unicode = LABELS_MAPPING.get(label)
+            if emoji_unicode:
+                unicodes = emoji_unicode.split('-')
+                for i, unicode in enumerate(unicodes[1:]):
+                    if i == 0:
+                        emoji_image = self._retrieve_emoji_as_PIL(unicode)
+                    else:
+                        next_emoji = self._retrieve_emoji_as_PIL(unicode)
+                        new_emoji_image = PIL.Image.new("RGBA", (emoji_image.width + next_emoji.width, emoji_image.height)) 
+                        new_emoji_image.paste(emoji_image, (0, 0))
+                        new_emoji_image.paste(next_emoji, (emoji_image.width, 0))
+                        emoji_image = new_emoji_image
+            emoji_images.append(emoji_image)
+
+        emoji_size = (emoji_image.width, emoji_image.height)
+        emoji_size_reduced = (int(emoji_size[0] * 0.7), int(emoji_size[1] * 0.7))
+
+        margin = emoji_size_reduced[0] // 5
+
+        img = PIL.Image.new("RGBA", frame_size, (255, 255, 255, 255))  
+        positions = [
+            (frame_size[0] // 2 - emoji_size[0] // 2, frame_size[1] // 2 - emoji_size[1] // 2),  # Center
+            (margin, margin),  # Top left corner
+            (frame_size[0] - emoji_size_reduced[0] - margin, margin),  # Top right corner
+            (margin, frame_size[1] - emoji_size_reduced[1] - margin),  # Bottom left corner
+            (frame_size[0] - emoji_size_reduced[0] - margin, frame_size[1] - emoji_size_reduced[1] - margin)  # Bottom right corner
+        ]
+
+        for i, emoji in enumerate(emoji_images):
+            emoji_resized = emoji.copy().convert("RGBA")
+            if i != 0:
+                emoji_resized.thumbnail((emoji_size_reduced[0], emoji_size_reduced[1]), PIL.Image.ANTIALIAS)
+            img.paste(emoji_resized, (positions[i][0], positions[i][1]), emoji_resized)
+
+        img.save(f'output/{output_name}_single_image.png')

@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import librosa as lb
 from mapping import retrieve_blacklist
+from inference import retrieve_sorted_audio_tagging_results
 
 
 def read_audio(path_audio, path_metadata, desired_sample_rate=None):
@@ -67,6 +68,32 @@ def extract_3best_labels(inferences):
         best_labels.append(_best_labels)
     
     return best_labels
-            
+
+
+def read_and_infer_full_audio(path_audio, audio_tagger, desired_sample_rate=None):
+    audio, _ = lb.load(path_audio, sr=desired_sample_rate)
+    clipwise_output, _ = audio_tagger.inference(np.reshape(audio, (1, -1)))
+    inference_result = retrieve_sorted_audio_tagging_results(clipwise_output)
+    
+    return inference_result
+
+def read_audio_without_metadata(path_audio, desired_sample_rate=None):
+    audio, sr = lb.load(path_audio, sr=desired_sample_rate)
+
+    n_chunks = 12
+
+    duration = lb.get_duration(y=audio, sr=sr)
+    chunk_duration = duration / n_chunks
+
+    audio_chunks = []
+    audio_times = []
+    for i in range(n_chunks): 
+        offset = i * chunk_duration
+        chunk, sr = lb.load(path_audio, sr=desired_sample_rate, offset=offset, duration=chunk_duration)
+
+        audio_chunks.append((chunk, sr))
+        audio_times.append((offset, chunk_duration))
+
+    return audio_chunks, audio_times
         
 

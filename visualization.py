@@ -147,31 +147,27 @@ class Visualization:
         center_x, center_y = frame_size[0] // 2, frame_size[1] // 2
         angle_step = 2 * math.pi / num_frames
 
-        for i, emoji_image in enumerate(emoji_images):
-            frame = frame.copy()
-            angle = angle_step * i - math.pi / 2
+        if len(emoji_images) == 1:
+            emoji = emoji_images[0]
+            position = (frame_size[0] // 2 - emoji.width // 2, frame_size[1] // 2 - emoji.height // 2)
+            emoji = emoji.convert('RGBA')
+            frame.paste(emoji, (position[0], position[1]), emoji)
+        else:
+            for i, emoji_image in enumerate(emoji_images):
+                frame = frame.copy()
+                angle = angle_step * i - math.pi / 2
 
-            emoji_resized = emoji_image.copy().convert("RGBA")
-            emoji_resized.thumbnail((frame_size[0] // 6, frame_size[1] // 6), PIL.Image.ANTIALIAS)
+                emoji_resized = emoji_image.copy().convert("RGBA")
+                emoji_resized.thumbnail((frame_size[0] // 6, frame_size[1] // 6), PIL.Image.ANTIALIAS)
 
-            x = center_x + int(circle_radius * math.cos(angle) - emoji_resized.width // 4)
-            y = center_y + int(circle_radius * math.sin(angle) - emoji_resized.height // 4)
+                x = center_x + int(circle_radius * math.cos(angle) - emoji_resized.width // 4)
+                y = center_y + int(circle_radius * math.sin(angle) - emoji_resized.height // 4)
 
 
-            # Paste the emoji onto the frame
-            frame.paste(emoji_resized, (x - int(0.05*frame_size[0]), y - int(0.05*frame_size[1])), emoji_resized)
-            frames.append(frame)
+                # Paste the emoji onto the frame
+                frame.paste(emoji_resized, (x - int(0.05*frame_size[0]), y - int(0.05*frame_size[1])), emoji_resized)
 
-        frames.insert(0, frames[-1])
-
-        # Save the frames as a GIF
-        frames[0].save(
-            f'output/{output_name}_circle.gif',
-            save_all=True,
-            append_images=frames[1:],
-            duration=duration,
-            loop=0,
-        )
+        frame.save(f'output/{output_name}_circle.gif')
 
     def create_emoji_circle_detailled_gif(self, labels, output_name='output', frame_size=(200, 200), duration=500, circle_radius=80):
         frames = []
@@ -328,7 +324,7 @@ class Visualization:
             (frame_size[0] - emoji_size_reduced[0] - margin, frame_size[1] - emoji_size_reduced[1] - margin)  # Bottom right corner
         ]
 
-        for i, emoji in enumerate(emoji_images):
+        for i, emoji in enumerate((emoji_images[0],)):
             emoji_resized = emoji.copy().convert("RGBA")
             if i != 0:
                 emoji_resized.thumbnail((emoji_size_reduced[0], emoji_size_reduced[1]), PIL.Image.ANTIALIAS)

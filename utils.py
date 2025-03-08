@@ -2,10 +2,10 @@ import pandas as pd
 import numpy as np
 import librosa as lb
 from mapping import retrieve_blacklist
-from inference import retrieve_sorted_audio_tagging_results
+from inference import interpolate_inference, retrieve_sorted_results
+from visualization import Visualization
 
-
-def read_audio(path_audio, path_metadata, desired_sample_rate=None):
+def read_audio_csv(path_audio, path_metadata, desired_sample_rate=None):
     """
     Reads an audio file and his metadata, extracting specified chunks based on timestamps.
 
@@ -69,13 +69,12 @@ def extract_3best_labels(inferences):
     
     return best_labels
 
-
-def read_and_infer_full_audio(path_audio, audio_tagger, desired_sample_rate=None):
-    audio, _ = lb.load(path_audio, sr=desired_sample_rate)
-    clipwise_output, _ = audio_tagger.inference(np.reshape(audio, (1, -1)))
-    inference_result = retrieve_sorted_audio_tagging_results(clipwise_output)
+# def read_and_infer_full_audio(path_audio, audio_tagger, desired_sample_rate=None):
+#     audio, _ = lb.load(path_audio, sr=desired_sample_rate)
+#     clipwise_output, _ = audio_tagger.inference(np.reshape(audio, (1, -1)))
+#     inference_result = retrieve_sorted_audio_tagging_results(clipwise_output)
     
-    return inference_result
+#     return inference_result
 
 def read_audio_without_metadata(path_audio, desired_sample_rate=None):
     audio, sr = lb.load(path_audio, sr=desired_sample_rate)
@@ -96,4 +95,42 @@ def read_audio_without_metadata(path_audio, desired_sample_rate=None):
 
     return audio_chunks, audio_times
         
+def concatenate_chunks(chunks, times):
+    new_chunks = []
+    new_times = []
+    sr = chunks[0][1]
+    for i in range(0, len(chunks), 2):
+        new_chunks.append((lb.util.stack([chunks[i][0], chunks[i+1]][0]), sr))
+        new_times.append((times[i][0], times[i][1] + times[i+1][1]))
 
+    return new_chunks, new_times
+
+def read_audio(path_audio):
+    window_size = 10
+    step_size = 1
+
+    audio, sr = lb.load(path_audio)
+    audio_duration = int(lb.get_duration(y=audio, sr=sr))
+
+    offset = 0
+    audio_chunks = []
+    audio_times = []
+    for i in range(audio_duration):
+        if offset + window_size < audio_duration:
+            chunk, sr = lb.load(path_audio, sr=sr, offset=offset, duration=window_size)
+            audio_chunks.append((chunk, sr))
+            audio_times.append((offset, window_size))
+            offset += step_size
+    
+    return audio_chunks, audio_times
+
+def generate_circle_from_inference(inferences, number_points, output_name='circle'):
+    interp_inferences = interpolate_inference(inferences, number_points)
+
+    results = []
+    for infer in interp_inferences:
+        results.append(retrieve_sorted_results(infer))
+
+    _, best_labels = extract_best_scores(results)
+
+    Visualization().create_emoji_circle_gif(best_labels, output_name=output_name)

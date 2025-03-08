@@ -1,7 +1,7 @@
 from inference import perform_inference
 from utils import read_audio
 from panns_inference import AudioTagging
-from utils import generate_circle_from_inference
+from utils import generate_circle_from_inference, print_inference_scores
 import sys
 
 audio_name = sys.argv[1] if len(sys.argv) > 1 else 'A_1'
@@ -11,6 +11,8 @@ chunks, times = read_audio(path_audio)
 model = AudioTagging(checkpoint_path=None, device='cpu')
 
 inferences = perform_inference(model, chunks)
+
+print_inference_scores(inferences)
 
 generate_circle_from_inference(inferences, 1, f'{audio_name}_1')
 generate_circle_from_inference(inferences, 6, f'{audio_name}_6')

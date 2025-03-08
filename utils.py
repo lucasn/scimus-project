@@ -4,6 +4,7 @@ import librosa as lb
 from mapping import retrieve_blacklist
 from inference import interpolate_inference, retrieve_sorted_results
 from visualization import Visualization
+from sys import exit
 
 def read_audio_csv(path_audio, path_metadata, desired_sample_rate=None):
     """
@@ -125,7 +126,10 @@ def read_audio(path_audio):
     return audio_chunks, audio_times
 
 def generate_circle_from_inference(inferences, number_points, output_name='circle'):
-    interp_inferences = interpolate_inference(inferences, number_points)
+    if number_points != 1:
+        interp_inferences = interpolate_inference(inferences, number_points)
+    else:
+        interp_inferences = np.mean(inferences, axis=0, keepdims=True)
 
     results = []
     for infer in interp_inferences:
@@ -134,3 +138,22 @@ def generate_circle_from_inference(inferences, number_points, output_name='circl
     _, best_labels = extract_best_scores(results)
 
     Visualization().create_emoji_circle_gif(best_labels, output_name=output_name)
+
+    top3_best_labels = extract_3best_labels(results)
+
+    print(f'\n>>> Best results for circle with {number_points} points')
+    print(f"{'Chunk':<30}{'Label 1':<30}{'Label 2':<30}{'Label 3':<30}")
+    for chunk_idx, labels in enumerate(top3_best_labels):
+        print(f'{chunk_idx:<30}{labels[0]:<30}{labels[1]:<30}{labels[2]:<30}')
+
+def print_inference_scores(inferences):
+    results = []
+    for infer in inferences:
+        results.append(retrieve_sorted_results(infer))
+
+    top3_best_labels = extract_3best_labels(results)
+
+    print(f'\n>>> Best results raw inference')
+    print(f"{'Chunk':<30}{'Label 1':<30}{'Label 2':<30}{'Label 3':<30}")
+    for chunk_idx, labels in enumerate(top3_best_labels):
+        print(f'{chunk_idx:<30}{labels[0]:<30}{labels[1]:<30}{labels[2]:<30}')

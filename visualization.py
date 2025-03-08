@@ -141,7 +141,7 @@ class Visualization:
         # Determine the number of frames (one for each emoji in the circle)
         num_frames = len(emoji_images)
 
-        frame = PIL.Image.new("RGBA", frame_size, (255, 255, 255, 1))
+        frame = PIL.Image.new("RGBA", frame_size, (255, 255, 255, 255))
 
         # Calculate positions for emojis in a circle
         center_x, center_y = frame_size[0] // 2, frame_size[1] // 2
@@ -167,7 +167,7 @@ class Visualization:
                 # Paste the emoji onto the frame
                 frame.paste(emoji_resized, (x - int(0.05*frame_size[0]), y - int(0.05*frame_size[1])), emoji_resized)
 
-        frame.save(f'output/{output_name}_circle.gif')
+        frame.save(f'output/{output_name}_circle.png')
 
     def create_emoji_circle_detailled_gif(self, labels, output_name='output', frame_size=(200, 200), duration=500, circle_radius=80):
         frames = []
